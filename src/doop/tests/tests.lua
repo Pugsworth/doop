@@ -1,33 +1,78 @@
-local classes = require("src.classes.classes")
+local doop = require("src.doop.doop")
 local Test = require("src.test")
 local util = require("src.util")
+
+Test.test("Sanity Checks", function(expect)
+    expect(true, "Should not error"):toBeTrue()
+    expect(false, "Should error"):toBeTrue()
+end)
 
 --[[
     What needs to be tested:
     - [ ] Class creation
-        - classes.Class("name", ...) -> {<class-def>}
+        - Creates a class definition table
+        - Definition table has a .prototype and .meta table
+        - Can add methods to .prototype table and meta methods to .meta table
+
     - [ ] Class inheritance
+        - Class inherits from a parent class.
+        - Methods called on child class are called from parent class with the child class as the first argument.
+        - The check for a method goes up the parent chain until it finds a method or nil.
         - child.method2(child, ...) -> parent.method2(child, ...)
+
     - [ ] Instance creation
-        - class_def() -> class_def:new() -> {<new-table>}
+        - Can create an instance of the class via either:
+            - doop.create(class_name, ...)
+            - class_def(...)
+            - class_def:new(...)
+        - Any two instances are not the same object.
+
     - [ ] Instance method calling
-        - instance:method() -> instance.prototype.method()
+        - Calling a method on a class instance calls the method on the class prototype table.
+        - instance:method() -> instance.prototype.method(instance)
+
     - [ ] Instance properties
-        - instance.property -> value
+        - Properties are pulled from the instance table and not the prototype or meta tables.
+        - instance.property -> any value
+
     - [ ] Instance metamethods
+        - Metamethods are pulled from the instance.meta table.
         - print(instance) -> instance.meta.__tostring, etc
+
     - [ ] Class [static] properties
+        - Class instance cannot access the static properties
         - instance.static_property -> nil
         - class.static_property -> value
+
     - [ ] Class [static] methods
+        - Class instance cannot access the static methods
         - instance.static_method() -> nil
         - class.static_method() -> value
+
+    - [ ] doop guards and checks
+        - doop.isClass(class) -> true/false
+        - doop.instanceOf(instance, class) -> true/false
+        - doop.doesImplement(instance, interface) -> true/false
+        - doop.getType(instance) -> class_name or Lua type
+        - doop.expects(instance, class) -> true/error
+
+    - [ ] Instance guards and checks
+        - instance:instanceOf(class) -> true/false
+        - instance:implements(interface) -> true/false
+        - instance:getType() -> class_name
+
+    - [ ] Interface creation
+        - Creates an interface definition table.
+
+    - [ ] Interface implementation
+        - Class implements an interface.
+        - Class can check if it implements an interface.
 --]]
 
 local Queue
 
 Test.test("Class creation", function(expect)
-    Queue = classes.Class("Queue", function(self, prefill)
+    Queue = doop.Class("Queue", function(self, prefill)
         self._queue = {}
         self._size = 0
         for _, v in ipairs(prefill or {}) do
@@ -35,7 +80,7 @@ Test.test("Class creation", function(expect)
         end
     end, nil)
 
-    expect(Queue.name).toEqual("Queue")
+    expect(Queue.name, "Class name"):toBe("Queue")
 
     function Queue.prototype.push(self, value)
         self._queue[self._size] = value
@@ -60,6 +105,10 @@ Test.test("Class creation", function(expect)
         return Queue.prototype:pop()
     end
 
+    function Queue.prototype.peek(self)
+        return self._queue[0]
+    end
+
     function Queue.prototype.size(self)
         return self._size
     end
@@ -80,10 +129,52 @@ Test.test("Class creation", function(expect)
     function Queue.meta.__len(self)
         return self._size
     end
+
+
+    local q = Queue()
+    for i = 1, 10 do
+        q:push(i)
+    end
+
+    expect(q:size(), "Queue size"):toBe(10)
+
+    for i = 1, 10 do
+        expect(q:pop(), string.format("Queue pop order(%s)", i)):toBe(i)
+    end
+
+    expect(q:size(), "Queue size after pop"):toBe(0)
 end)
 
 
+Test.test("interface creation", function(expect)
+    local IContainer = doop.interface("IContainer")
+    IContainer.property("size", "number")
+    IContainer.method("empty", "boolean")
 
+    Test.test("interface implements", function(expect2)
+        local queue = doop.Class("Queue", function(self, prefill)
+            self._queue = {}
+            self._size = 0
+            for _, v in ipairs(prefill or {}) do
+                self:push(v)
+            end
+        end, nil)
+        function queue.prototype.isEmpty(self)
+            return self._size == 0
+        end
+        doop.implements(queue, "IContainer")
+
+        local q = queue()
+        if doop.doesImplement(q, "IContainer") then
+            expect2(q):toHaveMethod("empty")
+            expect2(q:empty()):toBeTrue()
+        end
+
+    end)
+end);
+
+
+--[[
 do 
     local Vec2 = classes.Class("Vec2", function(self, x, y)
         self.x = util.default(x, 0)
@@ -160,3 +251,4 @@ do
     assert(vd.y == 20, "y != 20")
     print(vd)
 end
+--]]
