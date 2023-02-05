@@ -1,14 +1,24 @@
 --[[
+    @file doop.lua
+    @brief A simple class system for Lua.
+    @version 1.0.0
+    @author Kyle Wolsten
+    @date 2022-
+    @license GPL-3.0
+
+
     The Lua 5.0=>5.1 way of making modules involves using the "module()" function with "package.seeall".
     
     The Lua 5.2+ way of making modules involves using the "return" keyword at the end of the file.
 --]]
+
 
 -- Stores the created classes.
 local _class_list = {}
 local _interface_list = {}
 
 -- library table
+---@class doop
 local doop = {}
 
 
@@ -127,7 +137,7 @@ end
 
 --- Returns a class definition if it exists
 ---@param name string? The name of the class
----@return table The class definition
+---@return table @The class definition
 function doop.getClass(name)
     return _class_list[name]
 end
@@ -163,7 +173,7 @@ end
 --- Checks if a class says it implements an interface.
 ---@param class string|table The class to check.
 ---@param interface string The name of the interface to check for.
----@return boolean True if the class implements the interface, false otherwise.
+---@return boolean @True if the class implements the interface, false otherwise.
 function doop.doesImplement(class, interface)
     if not doop.isClass(class) then
         error(string.format("'%s' is not a doop class!", class))
@@ -188,7 +198,7 @@ end
 
 --- Checks if an interface has been defined.
 ---@param interface string The name of the interface to check for.
----@return boolean True if the interface exists, false otherwise.
+---@return boolean @True if the interface exists, false otherwise.
 function doop.interfaceExists(interface)
     return _interface_list[interface] ~= nil
 end
@@ -197,7 +207,7 @@ end
 --- Check if a class is an instance of another class. This implies Class1 is instance of Class1.
 ---@param class table The class to check.
 ---@param parent table|string The parent class to check against.
----@return boolean True if the class is an instance of the parent class, false otherwise.
+---@return boolean @True if the class is an instance of the parent class, false otherwise.
 function doop.instanceOf(class, parent)
     if not doop.isClass(class) then
         error(string.format("'%s' is not a doop class!", class))
